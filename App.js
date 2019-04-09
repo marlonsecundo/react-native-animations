@@ -20,6 +20,8 @@ const { width } = Dimensions.get("window");
 export default class App extends Component {
   state = {
     scrollOffset: new Animated.Value(0),
+    listProgress: new Animated.Value(0),
+    userInfoProgress: new Animated.Value(0),
     userSelected: null,
     userInfoVisible: false,
     users: [
@@ -68,7 +70,19 @@ export default class App extends Component {
 
   selectUser = user => {
     this.setState({ userSelected: user });
-    this.setState({ userInfoVisible: true });
+
+    Animated.sequence([
+      Animated.timing(this.state.listProgress, {
+        toValue: 100,
+        duration: 300
+      }),
+      Animated.timing(this.state.userInfoProgress, {
+        toValue: 100,
+        duration: 500
+      })
+    ]).start(() => {
+      this.setState({ userInfoVisible: true });
+    });
   };
 
   renderDetail = () => (
@@ -78,7 +92,21 @@ export default class App extends Component {
   );
 
   renderList = () => (
-    <View style={styles.container}>
+    <Animated.View
+      style={[
+        styles.container,
+        {
+          transform: [
+            {
+              translateX: this.state.listProgress.interpolate({
+                inputRange: [0, 100],
+                outputRange: [0, width]
+              })
+            }
+          ]
+        }
+      ]}
+    >
       <ScrollView
         scrollEventThrottle={16}
         onScroll={Animated.event([
@@ -97,7 +125,7 @@ export default class App extends Component {
           />
         ))}
       </ScrollView>
-    </View>
+    </Animated.View>
   );
 
   render() {
@@ -119,8 +147,16 @@ export default class App extends Component {
             }
           ]}
         >
-          <Image
-            style={styles.headerImage}
+          <Animated.Image
+            style={[
+              styles.headerImage,
+              {
+                opacity: this.state.userInfoProgress.interpolate({
+                  inputRange: [0, 100],
+                  outputRange: [0, 1]
+                })
+              }
+            ]}
             source={userSelected ? { uri: userSelected.thumbnail } : null}
           />
 
@@ -132,11 +168,42 @@ export default class App extends Component {
                   inputRange: [120, 140],
                   outputRange: [24, 16],
                   extrapolate: "clamp"
-                })
+                }),
+                transform: [
+                  {
+                    translateX: this.state.userInfoProgress.interpolate({
+                      inputRange: [0, 100],
+                      outputRange: [0, width]
+                    })
+                  }
+                ]
               }
             ]}
           >
-            {userSelected ? userSelected.name : "GoNative"}
+            GoNative
+          </Animated.Text>
+
+          <Animated.Text
+            style={[
+              styles.headerText,
+              {
+                fontSize: this.state.scrollOffset.interpolate({
+                  inputRange: [120, 140],
+                  outputRange: [24, 16],
+                  extrapolate: "clamp"
+                }),
+                transform: [
+                  {
+                    translateX: this.state.userInfoProgress.interpolate({
+                      inputRange: [0, 100],
+                      outputRange: [-width, 0]
+                    })
+                  }
+                ]
+              }
+            ]}
+          >
+            {userSelected ? userSelected.name : null}
           </Animated.Text>
         </Animated.View>
         {this.state.userInfoVisible ? this.renderDetail() : this.renderList()}
